@@ -27,6 +27,9 @@ export default defineNuxtConfig({
       }
     }
   },
+  hub: {
+    database: true
+  },
 
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
