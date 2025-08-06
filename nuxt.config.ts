@@ -6,9 +6,11 @@ export default defineNuxtConfig({
 
   nitro: {
     experimental: {
-      database: true
+      database: true,
+      tasks: true,
+      openAPI: true
     },
-    database: {
+    devDatabase: {
       default: {
         connector: 'better-sqlite3',
         options: {
