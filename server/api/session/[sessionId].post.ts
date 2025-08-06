@@ -8,7 +8,7 @@ import {
   generateObject,
 } from 'ai';
 import { createPrompt, createSuggestionsPrompt, processMessages } from '~~/server/utils/prompt';
-import type { PresentationPrepareContext } from '~~/server/utils/prompt';
+import type { PresentationPrepareContext } from '@@/shared/types';
 import { extractTextFromMessage, createMessageContent } from '~~/server/utils/helpers';
 import { generateId } from '~~/server/utils/db';
 
@@ -40,15 +40,19 @@ export default defineEventHandler(async (event) => {
   // Debug log
   console.log('Extracted context:', newContext);
   console.log('Current context after merge:', { ...sessionContext, ...newContext });
+  
+  // Check if off-topic
+  const isOffTopic = newContext.isOffTopic;
 
-  // Update session context - only update non-null values
+  // Update session context - only update non-null values and skip content updates if off-topic
   const updates = {
     step: newContext.step || sessionContext.step,
     language: newContext.language || sessionContext.language,
-    subject: newContext.subject || sessionContext.subject || null,
-    audience: newContext.audience || sessionContext.audience || null,
-    core_message: newContext.core_message || sessionContext.core_message || null,
-    structure: newContext.structure || sessionContext.structure || null,
+    subject: isOffTopic ? sessionContext.subject : (newContext.subject || sessionContext.subject || null),
+    purpose: isOffTopic ? sessionContext.purpose : (newContext.purpose || sessionContext.purpose || null),
+    audience: isOffTopic ? sessionContext.audience : (newContext.audience || sessionContext.audience || null),
+    core_message: isOffTopic ? sessionContext.core_message : (newContext.core_message || sessionContext.core_message || null),
+    structure: isOffTopic ? sessionContext.structure : (newContext.structure || sessionContext.structure || null),
   };
 
   await db.sql`
@@ -57,6 +61,7 @@ export default defineEventHandler(async (event) => {
       step = ${updates.step},
       language = ${updates.language},
       subject = ${updates.subject},
+      purpose = ${updates.purpose || null},
       audience = ${updates.audience},
       core_message = ${updates.core_message},
       structure = ${updates.structure},
@@ -68,6 +73,9 @@ export default defineEventHandler(async (event) => {
 
   // Start generating suggestions early (in parallel with streaming)
   const suggestionPromise = (async () => {
+    // Don't generate suggestions for off-topic responses
+    if (isOffTopic) return [];
+    
     const suggestionPrompt = createSuggestionsPrompt(sessionContext);
     if (!suggestionPrompt) return [];
     
@@ -92,18 +100,36 @@ export default defineEventHandler(async (event) => {
   // Create response stream
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
+      // Stream session context update immediately if there are changes
+      if (Object.keys(newContext).length > 0) {
+        writer.write({
+          type: 'data-session-context',
+          data: sessionContext
+        });
+      }
+      
       const result = streamText({
         model: openai('gpt-4o'),
         system: dedent`IMPORTANT: You must respond in the user's language.
           User's detected language: ${sessionContext.language || 'auto-detect'}
           If language is not detected, analyze the user's message and respond in the same language they used.`,
-        prompt: createPrompt(sessionContext, userMessage),
+        prompt: createPrompt(sessionContext, userMessage, isOffTopic),
         async onFinish(event) {
           const db = useDatabase();
 
-          // Save user message
+          // Save user message with session context update
           if (messages.length > 0) {
             const lastUserMessage = messages[messages.length - 1];
+            const userMessageParts = lastUserMessage.parts || [];
+            
+            // Add session context update to user message if context was updated
+            if (Object.keys(newContext).length > 0) {
+              userMessageParts.push({
+                type: 'data-session-context',
+                data: sessionContext
+              });
+            }
+            
             await db.sql`
               INSERT INTO chat_message (
                 id, session_id, role, content, metadata
@@ -111,7 +137,7 @@ export default defineEventHandler(async (event) => {
                 ${generateId()},
                 ${sessionId},
                 'user',
-                ${createMessageContent(lastUserMessage.parts || [])},
+                ${createMessageContent(userMessageParts)},
                 ${null}
               )
             `;

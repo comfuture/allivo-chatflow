@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
       step,
       language,
       subject,
+      purpose,
       audience,
       core_message,
       outline,
