@@ -13,7 +13,7 @@ export const useOpenAI = () => {
   // curl https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai
   const openai = createOpenAI({
     apiKey: apiKey,
-    baseURL: 'https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai',
+    baseURL: 'https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai/openai',
   });
   return openai;
 }
