@@ -4,9 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "dev": "npm run init:db && nuxt dev",
-    "postinstall": "nuxt prepare",
-    "init:db": "node script/init_db.mjs"
+    "dev": "nuxt dev",
+    "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.0",
