@@ -6,19 +6,32 @@ export default defineNuxtConfig({
 
   nitro: {
     experimental: {
-      database: true
+      database: true,
+      tasks: true,
+      openAPI: true
     },
-    database: {
+    devDatabase: {
       default: {
         connector: 'better-sqlite3',
         options: {
           path: 'server/data/allivo.db',
         }
       }
+    },
+    database: {
+      default: {
+        connector: 'cloudflare-d1',
+        options: {
+          database: 'allivo-chatflow',
+        }
+      }
     }
+  },
+  hub: {
+    database: true
   },
 
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss']
+  modules: ['@nuxtjs/tailwindcss', '@nuxthub/core']
 })

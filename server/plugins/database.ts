@@ -1,27 +1,12 @@
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
-import { join } from 'path';
-
-export default defineNitroPlugin(async () => {
-  // Check if database exists
-  const dbPath = join(process.cwd(), 'server', 'data', 'allivo.db');
-  
-  if (!existsSync(dbPath)) {
-    console.log('Database not found. Initializing...');
-    
-    try {
-      // Run the init:db script
-      execSync('npm run init:db', {
-        stdio: 'inherit',
-        cwd: process.cwd()
-      });
-      
-      console.log('Database initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
-      throw new Error('Database initialization failed');
-    }
-  } else {
-    console.log('Database found at:', dbPath);
+export default defineNitroPlugin(async (nitroApp) => {
+  // Run the database initialization task on startup
+  try {
+    console.log('Running database initialization task...');
+    await runTask('db:init');
+    console.log('Database initialization task completed');
+  } catch (error) {
+    console.error('Failed to run database initialization task:', error);
+    // Don't throw the error to allow the server to start
+    // The task might have already been run before
   }
 });
