@@ -17,6 +17,14 @@ export default defineNuxtConfig({
           path: 'server/data/allivo.db',
         }
       }
+    },
+    database: {
+      default: {
+        connector: 'cloudflare-d1',
+        options: {
+          database: 'allivo-chatflow',
+        }
+      }
     }
   },
 
