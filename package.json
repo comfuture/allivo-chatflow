@@ -14,7 +14,6 @@
     "@nuxtjs/tailwindcss": "6.14.0",
     "@vueuse/nuxt": "^13.6.0",
     "ai": "^5.0.0",
-    "better-sqlite3": "^12.2.0",
     "dedent": "^1.6.0",
     "marked": "^16.1.2",
     "nuxt": "^4.0.1",
@@ -23,6 +22,7 @@
     "zod": "^4.0.14"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.16"
+    "@tailwindcss/typography": "^0.5.16",
+    "better-sqlite3": "^12.2.0"
   }
 }
