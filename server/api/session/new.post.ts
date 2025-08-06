@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
   `;
 
   // Get language from body or Accept-Language header
-  const language = body.language || parseLanguage(getHeader(event, 'accept-language'));
+  const language = body.language || 'ko' // parseLanguage(getHeader(event, 'accept-language'));
 
   const openai = useOpenAI();
   const { text } = await generateText({
