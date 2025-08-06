@@ -35,6 +35,7 @@ const createChatSessionTable = () => {
       step TEXT,
       language TEXT,
       subject TEXT,
+      purpose TEXT,
       audience TEXT,
       core_message TEXT,
       outline TEXT,

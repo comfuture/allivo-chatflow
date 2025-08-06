@@ -1,18 +1,19 @@
 import dedent from 'dedent';
-import { randomUUID } from 'crypto';
 import { generateText } from 'ai';
+import { parseLanguage, createMessageContent } from '~~/server/utils/helpers';
+import { generateId } from '~~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
   const db = useDatabase();
 
   // Generate a new session ID
-  const sessionId = randomUUID();
+  const sessionId = generateId();
 
   // Get optional initial context from request body
   const body = await readBody(event) || {};
 
   // Create new session with default values
-  const result = await db.sql`
+  await db.sql`
     INSERT INTO chat_session (
       id,
       step,
@@ -25,11 +26,11 @@ export default defineEventHandler(async (event) => {
       status
     ) VALUES (
       ${sessionId},
-      ${body.step || 'subject'},
+      ${body.step || 'initial'},
       ${body.language || null},
       ${body.subject || null},
       ${body.audience || null},
-      ${body.coreMessage || null},
+      ${body.core_message || null},
       ${body.outline || null},
       ${body.structure || null},
       'active'
@@ -37,23 +38,29 @@ export default defineEventHandler(async (event) => {
   `;
 
   // Get language from body or Accept-Language header
-  const language = body.language || getHeader(event, 'accept-language')?.split(',')[0]?.split('-')[0] || 'en';
+  const language = body.language || parseLanguage(getHeader(event, 'accept-language'));
 
   const openai = useOpenAI();
   const { text } = await generateText({
     model: openai('gpt-4o'),
-    prompt: dedent`Generate a greeting message in ${language} for a new session.
-      The message should be friendly and welcoming. Ask for the topic of the presentation in a conversational tone.
-      <example>
-        Hi there! What topic are you preparing your presentation on? Let's get started!
+    system: `IMPORTANT: Generate the message in ${language} language. Use friendly, conversational tone with appropriate emojis.`,
+    prompt: dedent`Generate an initial greeting for Alivo presentation preparation service.
+      
+      Follow this format:
+      - Warm greeting with emoji
+      - Ask about their presentation topic
+      
+      <example for English>
+        Hello! 😊
+        First, what topic are you preparing a presentation about?
       </example>
-      <example>
-        안녕하세요! 준비하고 계신 발표 주제는 무엇인가요? 시작해 볼까요?
+      
+      <example for Korean>
+        안녕하세요! 😊
+        먼저, 이번에 준비하고 계신 발표는 어떤 주제인가요?
       </example>
     `,
   });
-
-  // const greetingMessage = greetings[language] || greetings['en'];
 
   // Insert greeting message into chat_message with proper JSON format
   await db.sql`
@@ -64,10 +71,10 @@ export default defineEventHandler(async (event) => {
       content,
       metadata
     ) VALUES (
-      ${randomUUID()},
+      ${generateId()},
       ${sessionId},
       'assistant',
-      ${JSON.stringify({ parts: [{ type: 'text', text }] })},
+      ${createMessageContent([{ type: 'text', text }])},
       ${null}
     )
   `;
@@ -77,11 +84,11 @@ export default defineEventHandler(async (event) => {
     id: sessionId,
     createdAt: new Date().toISOString(),
     status: 'active',
-    step: body.step || null,
+    step: body.step || 'initial',
     language: body.language || null,
     subject: body.subject || null,
     audience: body.audience || null,
-    coreMessage: body.coreMessage || null,
+    core_message: body.core_message || null,
     outline: body.outline || null,
     structure: body.structure || null
   };
