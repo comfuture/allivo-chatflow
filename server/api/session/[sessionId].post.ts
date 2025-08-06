@@ -1,156 +1,159 @@
 import { z } from 'zod';
+import dedent from 'dedent';
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   streamText,
-  convertToModelMessages,
   UIMessage,
   generateObject,
 } from 'ai';
-import { AllivoUIMessage } from '~~/shared/types';
-import { randomUUID } from 'crypto';
 import { createPrompt, createSuggestionsPrompt, processMessages } from '~~/server/utils/prompt';
 import type { PresentationPrepareContext } from '~~/server/utils/prompt';
-
-function extractTextParts(content: any): string[] {
-  if (Array.isArray(content)) {
-    return content.map(part => part.text || '');
-  } else if (typeof content === 'string') {
-    return [content];
-  } else if (content && typeof content === 'object' && 'text' in content) {
-    return [content.text];
-  }
-  return [];
-}
+import { extractTextFromMessage, createMessageContent } from '~~/server/utils/helpers';
+import { generateId } from '~~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
   const sessionId = event.context.params?.sessionId;
   if (!sessionId) {
     throw createError({ statusCode: 400, statusMessage: 'Session ID is required' });
   }
+
   const db = useDatabase();
+  const openai = useOpenAI();
+  
+  // Get session
   const { rows } = await db.sql`SELECT * FROM chat_session WHERE id = ${sessionId}`;
   if (!rows || rows.length === 0) {
     throw createError({ statusCode: 404, statusMessage: 'Session not found' });
   }
   const sessionContext = rows[0] as PresentationPrepareContext;
+  
+  // Get messages from request
   const { messages }: { messages: UIMessage[] } = await readBody(event);
-  const openai = useOpenAI();
 
-  const newContext = await processMessages(sessionContext,
-    extractTextParts(messages?.[messages.length - 2]?.parts).join(''),
-    extractTextParts(messages?.[messages.length - 1]?.parts || []).join(''),
-  );
+  // Process the conversation to extract context
+  const lastAssistantMessage = messages.length >= 2 ? extractTextFromMessage(messages[messages.length - 2]) : '';
+  const userMessage = extractTextFromMessage(messages[messages.length - 1]);
+  
+  const newContext = await processMessages(sessionContext, lastAssistantMessage, userMessage);
+  
+  // Debug log
+  console.log('Extracted context:', newContext);
+  console.log('Current context after merge:', { ...sessionContext, ...newContext });
 
-  // update session context with new information
+  // Update session context - only update non-null values
+  const updates = {
+    step: newContext.step || sessionContext.step,
+    language: newContext.language || sessionContext.language,
+    subject: newContext.subject || sessionContext.subject || null,
+    audience: newContext.audience || sessionContext.audience || null,
+    core_message: newContext.core_message || sessionContext.core_message || null,
+    structure: newContext.structure || sessionContext.structure || null,
+  };
+
   await db.sql`
     UPDATE chat_session
     SET
-      step = ${newContext.step || sessionContext.step},
-      language = ${newContext.language || sessionContext.language},
-      subject = ${newContext.subject || sessionContext.subject},
-      audience = ${newContext.audience || sessionContext.audience},
-      core_message = ${newContext.core_message || sessionContext.core_message},
-      structure = ${newContext.structure || sessionContext.structure},
+      step = ${updates.step},
+      language = ${updates.language},
+      subject = ${updates.subject},
+      audience = ${updates.audience},
+      core_message = ${updates.core_message},
+      structure = ${updates.structure},
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ${sessionId}
   `;
 
-  Object.assign(sessionContext, newContext);
+  Object.assign(sessionContext, updates);
 
-  const stream = createUIMessageStream<AllivoUIMessage>({
+  // Start generating suggestions early (in parallel with streaming)
+  const suggestionPromise = (async () => {
+    const suggestionPrompt = createSuggestionsPrompt(sessionContext);
+    if (!suggestionPrompt) return [];
+    
+    try {
+      const { object } = await generateObject({
+        model: openai('gpt-4o-mini'),
+        system: dedent`IMPORTANT: Generate suggestions in the user's language.
+          User's language: ${sessionContext.language || 'auto-detect'}
+          All suggestions must be in the same language as the user's messages.`,
+        prompt: suggestionPrompt,
+        schema: z.object({
+          candidates: z.array(z.string().min(1).max(255)).describe('3-5 suggestions in user language'),
+        }),
+      });
+      return object.candidates;
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      return [];
+    }
+  })();
+
+  // Create response stream
+  const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const result = streamText({
         model: openai('gpt-4o'),
-        // messages: convertToModelMessages(messages),
-        system: `You should speak in the language of user's context or ${sessionContext.language || 'English'}.`,
-        prompt: createPrompt(sessionContext),
+        system: dedent`IMPORTANT: You must respond in the user's language.
+          User's detected language: ${sessionContext.language || 'auto-detect'}
+          If language is not detected, analyze the user's message and respond in the same language they used.`,
+        prompt: createPrompt(sessionContext, userMessage),
         async onFinish(event) {
           const db = useDatabase();
 
-          // Save the user's last message
+          // Save user message
           if (messages.length > 0) {
             const lastUserMessage = messages[messages.length - 1];
-
             await db.sql`
               INSERT INTO chat_message (
-                id,
-                session_id,
-                role,
-                content,
-                metadata
+                id, session_id, role, content, metadata
               ) VALUES (
-                ${randomUUID()},
+                ${generateId()},
                 ${sessionId},
                 'user',
-                ${JSON.stringify({
-              parts: lastUserMessage.parts || []
-            })},
+                ${createMessageContent(lastUserMessage.parts || [])},
                 ${null}
               )
             `;
           }
 
-          // Save the assistant's response in the same UIMessage format with suggestion data
-          // const suggestionCandidates = ['Candidate 1', 'Candidate 2', 'Candidate 3'];
-          const suggestionPrompt = createSuggestionsPrompt(sessionContext);
-          const { object } = await generateObject({
-            model: openai('gpt-4.1-mini'),
-            system: `You should speak in the language of user's context or ${sessionContext.language || 'English'}.`,
-            prompt: suggestionPrompt,
-            schema: z.object({
-              candidates: z.array(z.string().min(1).max(255)),
-            }),
-          })
-          const suggestionCandidates = object.candidates;
+          // Wait for suggestions (already started generating)
+          const suggestions = await suggestionPromise;
 
+          // Save assistant response with suggestions
           await db.sql`
             INSERT INTO chat_message (
-              id,
-              session_id,
-              role,
-              content,
-              metadata
+              id, session_id, role, content, metadata
             ) VALUES (
-              ${randomUUID()},
+              ${generateId()},
               ${sessionId},
               'assistant',
+              ${createMessageContent([
+                { type: 'text', text: event.text },
+                { type: 'data-suggestion', data: { candidates: suggestions } }
+              ])},
               ${JSON.stringify({
-            parts: [
-              {
-                type: 'text',
-                text: event.text
-              },
-              {
-                type: 'data-suggestion',
-                data: {
-                  candidates: suggestionCandidates
-                }
-              }
-            ]
-          })},
-              ${JSON.stringify({
-            finishReason: event.finishReason,
-            usage: event.usage
-          })}
+                finishReason: event.finishReason,
+                usage: event.usage
+              })}
             )
           `;
 
-          // Update session's updated_at timestamp
+          // Update session timestamp
           await db.sql`
             UPDATE chat_session 
             SET updated_at = CURRENT_TIMESTAMP 
             WHERE id = ${sessionId}
           `;
 
+          // Send suggestions to client
           writer.write({
             type: 'data-suggestion',
-            data: {
-              candidates: suggestionCandidates,
-            }
-          })
+            data: { candidates: suggestions }
+          });
         }
       });
+      
       writer.merge(result.toUIMessageStream());
     },
   });
