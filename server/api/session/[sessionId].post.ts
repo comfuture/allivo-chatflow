@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
 
   const db = useDatabase();
   // const openai = useOpenAI();
-  const models = useGithubModels();
+  // const models = useGithubModels();
 
   // Get session
   const { rows } = await db.sql`SELECT * FROM chat_session WHERE id = ${sessionId}`;
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
 
     try {
       const { object } = await generateObject({
-        model: models('gpt-4.1-mini'), // openai('gpt-4o-mini'),
+        model: 'openai/gpt-4.1-mini', // openai('gpt-4o-mini'),
         system: dedent`IMPORTANT: Generate suggestions in the user's language.
           User's language: ${sessionContext.language || 'auto-detect'}
           All suggestions must be in the same language as the user's messages.`,
@@ -110,7 +110,7 @@ export default defineEventHandler(async (event) => {
       }
 
       const result = streamText({
-        model: models('openai/gpt-4.1'), // openai('gpt-4o'),
+        model: 'openai/gpt-4.1', // openai('gpt-4o'),
         system: dedent`IMPORTANT: You must respond in the user's language.
           User's detected language: ${sessionContext.language || 'auto-detect'}
           If language is not detected, analyze the user's message and respond in the same language they used.`,
