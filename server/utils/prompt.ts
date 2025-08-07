@@ -323,10 +323,8 @@ export const processMessages = async (
   - Always detect the language from the user's current message
   - Return empty values for fields not found in the message`;
 
-  const openai = useOpenAI();
-  const models = useGithubModels();
   const { object: extracted } = await generateObject({
-    model: models('openai/gpt-4.1'), // openai('gpt-4o'),
+    model: 'openai/gpt-4.1', // openai('gpt-4o'),
     prompt,
     schema: z.object({
       isOffTopic: z.boolean()
