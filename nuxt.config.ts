@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   runtimeConfig: {
     openaiApiKey: '',
-    githubToken: ''
+    aiGatewayApiKey: ''
   },
 
   nitro: {

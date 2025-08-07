@@ -10,14 +10,6 @@
     "@ai-sdk/provider" "2.0.0"
     "@ai-sdk/provider-utils" "3.0.0"
 
-"@ai-sdk/openai-compatible@beta":
-  version "1.0.0-beta.13"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/openai-compatible/-/openai-compatible-1.0.0-beta.13.tgz#9d442a18ced059b5b95be728be39893d03da1391"
-  integrity sha512-APJiF7siVRhxAVsg9wl1lalgXslVqqPw3AudzxHVkhEr3Kw232JbLf1/CjGAyeqdKomX9DTe2Yt5+4N+UDOZOQ==
-  dependencies:
-    "@ai-sdk/provider" "2.0.0-beta.2"
-    "@ai-sdk/provider-utils" "3.0.0-beta.10"
-
 "@ai-sdk/openai@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-2.0.0.tgz#9641faaa57f58e91320f0ba0bc454c1a21a3b504"
@@ -36,27 +28,10 @@
     eventsource-parser "^3.0.3"
     zod-to-json-schema "^3.24.1"
 
-"@ai-sdk/provider-utils@3.0.0-beta.10", "@ai-sdk/provider-utils@beta":
-  version "3.0.0-beta.10"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-3.0.0-beta.10.tgz#12e5a74b1cfb89baa6cd492e5c7aafea6279ef90"
-  integrity sha512-e6WSsgM01au04/1L/v5daXHn00eKjPBQXl3jq3BfvQbQ1jo8Rls2pvrdkyVc25jBW4TV4Zm+tw+v6NAh5NPXMA==
-  dependencies:
-    "@ai-sdk/provider" "2.0.0-beta.2"
-    "@standard-schema/spec" "^1.0.0"
-    eventsource-parser "^3.0.3"
-    zod-to-json-schema "^3.24.1"
-
 "@ai-sdk/provider@2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-2.0.0.tgz#b853c739d523b33675bc74b6c506b2c690bc602b"
   integrity sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==
-  dependencies:
-    json-schema "^0.4.0"
-
-"@ai-sdk/provider@2.0.0-beta.2", "@ai-sdk/provider@beta":
-  version "2.0.0-beta.2"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-2.0.0-beta.2.tgz#20144210024ee3d484c3639bad1a36a372a824e2"
-  integrity sha512-vqhtZA7R24q1XnmfmIb1fZSmHMIaJH1BVQ+0kFnNJgqWsc+V8i+yfetZ37gUc4fXATFmBuS/6O7+RPoHsZ2Fqg==
   dependencies:
     json-schema "^0.4.0"
 
@@ -798,15 +773,6 @@
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-3.1.1.tgz#af3aea7f1e52ec916d8b5c9dcc0f09d4c060a3fc"
   integrity sha512-5DGmA8FTdB2XbDeEwc/5ZXBl6UbBAyBOOLlPuBnZ/N1SwdH9Ii+cOX3tBROlDgcTXxjOYnLMVoKk9+FXAw0CJw==
-
-"@github/models@^0.0.1-beta.1":
-  version "0.0.1-beta.1"
-  resolved "https://registry.yarnpkg.com/@github/models/-/models-0.0.1-beta.1.tgz#ee0f232ff8bde10ffb0dcad5ef238aa920fa295f"
-  integrity sha512-REynbc7lbNR56I7ihC8KvisM7BFEJgiQ7NzEVLIABWmlfXy5kB0W6na8x4FF+EldGCOMivjyPdlsr+K4HOzAnw==
-  dependencies:
-    "@ai-sdk/openai-compatible" beta
-    "@ai-sdk/provider" beta
-    "@ai-sdk/provider-utils" beta
 
 "@img/sharp-darwin-arm64@0.33.5":
   version "0.33.5"
