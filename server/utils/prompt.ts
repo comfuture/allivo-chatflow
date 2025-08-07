@@ -19,7 +19,7 @@ function getNextMissingField(context: PresentationPrepareContext): string | null
 // Off-topic 응답을 위한 프롬프트 생성
 export const createOffTopicPrompt = (context: PresentationPrepareContext, userMessage: string) => {
   const nextField = getNextMissingField(context);
-  
+
   const examples: Record<string, { ko: string; en: string }> = {
     subject: {
       ko: "프레젠테이션 주제에 대해 다시 여쭤볼게요. 어떤 내용을 발표하실 예정이신가요?",
@@ -38,7 +38,7 @@ export const createOffTopicPrompt = (context: PresentationPrepareContext, userMe
       en: "Let's get back to your core message. What's the one thing you want to convey in this presentation?"
     }
   };
-  
+
   return dedent`The user gave an off-topic response to your presentation preparation question.
     
     User's off-topic message: "${userMessage}"
@@ -52,7 +52,7 @@ export const createOffTopicPrompt = (context: PresentationPrepareContext, userMe
     Use friendly tone with appropriate emoji.
     
     Example responses:
-    ${context.language === 'ko' || userMessage.match(/[가-힣]/) ? 
+    ${context.language === 'ko' || userMessage.match(/[가-힣]/) ?
       (nextField && examples[nextField]?.ko) || "프레젠테이션 준비로 돌아가볼게요! 😊" :
       (nextField && examples[nextField]?.en) || "Let's get back to preparing your presentation! 😊"
     }
@@ -70,9 +70,9 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
   if (isOffTopic && userMessage) {
     return createOffTopicPrompt(context, userMessage);
   }
-  
+
   const nextField = getNextMissingField(context);
-  
+
   // 모든 정보가 있으면 요약 및 스토리 구조 제안
   if (!nextField) {
     return dedent`The user has provided all necessary information for their presentation.
@@ -106,10 +106,10 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
     
     IMPORTANT: Respond in the user's language.`;
   }
-  
+
   // 각 단계별 질문 프롬프트
   let questionPrompt = '';
-  
+
   switch (nextField) {
     case 'subject':
       questionPrompt = dedent`Create a warm greeting and ask about their presentation topic.
@@ -123,7 +123,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
         "Hello! 😊
         First, what topic are you preparing a presentation about?"`;
       break;
-      
+
     case 'purpose':
       questionPrompt = dedent`Acknowledge their topic positively, then ask about the ultimate purpose/goal.
         ${context.subject ? `They're presenting about: ${context.subject}` : ''}
@@ -139,7 +139,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
         
         👉 What result do you want from this presentation?"`;
       break;
-      
+
     case 'audience':
       questionPrompt = dedent`Ask about their audience and what the audience cares about.
         ${context.subject ? `Topic: ${context.subject}` : ''}
@@ -157,7 +157,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
         
         👉 (e.g., profitability, feature differentiation, execution strategy)"`;
       break;
-      
+
     case 'core_message':
       questionPrompt = dedent`Ask for their core message - the one key takeaway.
         ${context.subject ? `Topic: ${context.subject}` : ''}
@@ -180,7 +180,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
         👉 'If you had to give this presentation a one-line title?'"`;
       break;
   }
-  
+
   return dedent`You are helping the user prepare a presentation with a friendly, supportive tone.
     
     ${questionPrompt}
@@ -196,7 +196,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
 
 export const createSuggestionsPrompt = (context: PresentationPrepareContext) => {
   const nextField = getNextMissingField(context);
-  
+
   // 모든 정보가 수집되었을 때의 제안 (스토리 구조 선택)
   if (!nextField) {
     return dedent`The user has provided all information and needs to select a story structure.
@@ -214,7 +214,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         ['이 흐름으로 슬라이드 자동 생성 시작하기', '이 기획에 어울리는 디자인 템플릿 보기', '처음으로 돌아가 새 기획 시작하기']
       </example>`;
   }
-  
+
   const basePrompt = dedent`Generate suggestions relevant to the current question.
     Current context:
     ${context.subject ? `Subject: ${context.subject}` : ''}
@@ -224,7 +224,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
     
     User's language: ${context.language || 'unknown'}
     IMPORTANT: Generate all suggestions in the user's language.`;
-  
+
   switch (nextField) {
     case 'subject':
       return dedent`${basePrompt}
@@ -235,7 +235,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         <example for Korean>
           ['신제품 출시 소개', '분기 실적 보고', '팀 프로젝트 제안']
         </example>`;
-    
+
     case 'purpose':
       return dedent`${basePrompt}
         Create suggestions for presentation purposes/goals based on the subject "${context.subject}".
@@ -245,7 +245,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         <example for Korean>
           ['프로젝트 승인 받기', '고객 관심 유도하기', '투자 유치하기']
         </example>`;
-    
+
     case 'audience':
       return dedent`${basePrompt}
         Create suggestions for potential audiences for a presentation about "${context.subject}" with purpose "${context.purpose}".
@@ -255,7 +255,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         <example for Korean>
           ['회사 임원진', '팀 구성원들', '외부 투자자들']
         </example>`;
-    
+
     case 'core_message':
       return dedent`${basePrompt}
         Create suggestions for core messages about "${context.subject}" for "${context.audience}" to achieve "${context.purpose}".
@@ -265,7 +265,7 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         <example for Korean>
           ['지금이 실행의 최적기입니다', '우리만의 차별화된 경쟁력이 있습니다', '측정 가능한 ROI를 제공합니다']
         </example>`;
-    
+
     default:
       return undefined;
   }
@@ -273,8 +273,8 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
 
 // 사용자 메시지에서 컨텍스트 추출
 export const processMessages = async (
-  context: PresentationPrepareContext, 
-  question: string, 
+  context: PresentationPrepareContext,
+  question: string,
   answer: string
 ): Promise<Partial<PresentationPrepareContext> & { isOffTopic?: boolean }> => {
   const prompt = dedent`Extract ALL relevant information from the user's message.
@@ -322,10 +322,11 @@ export const processMessages = async (
   - Extract all relevant information even if indirect
   - Always detect the language from the user's current message
   - Return empty values for fields not found in the message`;
-  
+
   const openai = useOpenAI();
+  const models = useGithubModels();
   const { object: extracted } = await generateObject({
-    model: openai('gpt-4o'),
+    model: models('openai/gpt-4.1'), // openai('gpt-4o'),
     prompt,
     schema: z.object({
       isOffTopic: z.boolean()
@@ -337,44 +338,44 @@ export const processMessages = async (
       purpose: z.string().max(255).optional()
         .describe('The goal or desired outcome'),
       audience: z.string().max(255).optional()
-        .describe('The target audience'), 
+        .describe('The target audience'),
       core_message: z.string().max(2000).optional()
         .describe('The main point or key message'),
       structure: z.string().max(255).optional()
         .describe('Presentation structure if mentioned'),
     }),
   });
-  
+
   // Debug log
   console.log('User message:', answer);
   console.log('Extracted:', extracted);
-  
+
   // Off-topic 체크
   if (extracted.isOffTopic) {
-    return { 
+    return {
       isOffTopic: true,
       language: extracted.language || context.language,
       step: context.step // Keep current step
     };
   }
-  
+
   // 새로운 정보만 반환
   const updates: Partial<PresentationPrepareContext> & { isOffTopic?: boolean } = {};
-  
+
   // 언어는 항상 업데이트
   if (extracted.language) {
     updates.language = extracted.language;
   }
-  
+
   if (extracted.subject && !context.subject) updates.subject = extracted.subject;
   if (extracted.purpose && !context.purpose) updates.purpose = extracted.purpose;
   if (extracted.audience && !context.audience) updates.audience = extracted.audience;
   if (extracted.core_message && !context.core_message) updates.core_message = extracted.core_message;
   if (extracted.structure && !context.structure) updates.structure = extracted.structure;
-  
+
   // step 결정
   const nextField = getNextMissingField({ ...context, ...updates });
   updates.step = nextField ? `collecting_${nextField}` : 'complete';
-  
+
   return updates;
 }

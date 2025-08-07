@@ -40,9 +40,10 @@ export default defineEventHandler(async (event) => {
   // Get language from body or Accept-Language header
   const language = body.language || 'ko' // parseLanguage(getHeader(event, 'accept-language'));
 
-  const openai = useOpenAI();
+  // const openai = useOpenAI();
+  const models = useGithubModels();
   const { text } = await generateText({
-    model: openai('gpt-4o'),
+    model: models('openai/gpt-4.1'), // openai('gpt-4.1'),
     system: `IMPORTANT: Generate the message in ${language} language. Use friendly, conversational tone with appropriate emojis.`,
     prompt: dedent`Generate an initial greeting for Alivo presentation preparation service.
       

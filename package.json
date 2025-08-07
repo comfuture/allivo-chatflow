@@ -10,6 +10,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.0",
     "@ai-sdk/vue": "^2.0.0",
+    "@github/models": "^0.0.1-beta.1",
     "@nuxthub/core": "0.9.0",
     "@nuxtjs/tailwindcss": "6.14.0",
     "@vueuse/nuxt": "^13.6.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
-    "better-sqlite3": "^12.2.0"
+    "better-sqlite3": "^12.2.0",
+    "wrangler": "^4.28.1"
   }
 }

@@ -1,7 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   runtimeConfig: {
-    openaiApiKey: ''
+    openaiApiKey: '',
+    githubToken: ''
   },
 
   nitro: {
@@ -25,8 +26,9 @@ export default defineNuxtConfig({
           database: 'allivo-chatflow',
         }
       }
-    }
+    },
   },
+
   hub: {
     database: true
   },

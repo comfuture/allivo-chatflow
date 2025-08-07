@@ -19,28 +19,29 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDatabase();
-  const openai = useOpenAI();
-  
+  // const openai = useOpenAI();
+  const models = useGithubModels();
+
   // Get session
   const { rows } = await db.sql`SELECT * FROM chat_session WHERE id = ${sessionId}`;
   if (!rows || rows.length === 0) {
     throw createError({ statusCode: 404, statusMessage: 'Session not found' });
   }
   const sessionContext = rows[0] as PresentationPrepareContext;
-  
+
   // Get messages from request
   const { messages }: { messages: UIMessage[] } = await readBody(event);
 
   // Process the conversation to extract context
   const lastAssistantMessage = messages.length >= 2 ? extractTextFromMessage(messages[messages.length - 2]) : '';
   const userMessage = extractTextFromMessage(messages[messages.length - 1]);
-  
+
   const newContext = await processMessages(sessionContext, lastAssistantMessage, userMessage);
-  
+
   // Debug log
   console.log('Extracted context:', newContext);
   console.log('Current context after merge:', { ...sessionContext, ...newContext });
-  
+
   // Check if off-topic
   const isOffTopic = newContext.isOffTopic;
 
@@ -75,13 +76,13 @@ export default defineEventHandler(async (event) => {
   const suggestionPromise = (async () => {
     // Don't generate suggestions for off-topic responses
     if (isOffTopic) return [];
-    
+
     const suggestionPrompt = createSuggestionsPrompt(sessionContext);
     if (!suggestionPrompt) return [];
-    
+
     try {
       const { object } = await generateObject({
-        model: openai('gpt-4o-mini'),
+        model: models('gpt-4.1-mini'), // openai('gpt-4o-mini'),
         system: dedent`IMPORTANT: Generate suggestions in the user's language.
           User's language: ${sessionContext.language || 'auto-detect'}
           All suggestions must be in the same language as the user's messages.`,
@@ -107,9 +108,9 @@ export default defineEventHandler(async (event) => {
           data: sessionContext
         });
       }
-      
+
       const result = streamText({
-        model: openai('gpt-4o'),
+        model: models('openai/gpt-4.1'), // openai('gpt-4o'),
         system: dedent`IMPORTANT: You must respond in the user's language.
           User's detected language: ${sessionContext.language || 'auto-detect'}
           If language is not detected, analyze the user's message and respond in the same language they used.`,
@@ -121,7 +122,7 @@ export default defineEventHandler(async (event) => {
           if (messages.length > 0) {
             const lastUserMessage = messages[messages.length - 1];
             const userMessageParts = lastUserMessage.parts || [];
-            
+
             // Add session context update to user message if context was updated
             if (Object.keys(newContext).length > 0) {
               userMessageParts.push({
@@ -129,7 +130,7 @@ export default defineEventHandler(async (event) => {
                 data: sessionContext
               });
             }
-            
+
             await db.sql`
               INSERT INTO chat_message (
                 id, session_id, role, content, metadata
@@ -155,13 +156,13 @@ export default defineEventHandler(async (event) => {
               ${sessionId},
               'assistant',
               ${createMessageContent([
-                { type: 'text', text: event.text },
-                { type: 'data-suggestion', data: { candidates: suggestions } }
-              ])},
+            { type: 'text', text: event.text },
+            { type: 'data-suggestion', data: { candidates: suggestions } }
+          ])},
               ${JSON.stringify({
-                finishReason: event.finishReason,
-                usage: event.usage
-              })}
+            finishReason: event.finishReason,
+            usage: event.usage
+          })}
             )
           `;
 
@@ -179,7 +180,7 @@ export default defineEventHandler(async (event) => {
           });
         }
       });
-      
+
       writer.merge(result.toUIMessageStream());
     },
   });
