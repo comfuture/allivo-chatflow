@@ -10,11 +10,9 @@ import { createOpenAI } from '@ai-sdk/openai';
 export const useOpenAI = () => {
   const { openaiApiKey: apiKey } = useRuntimeConfig()
   if (!apiKey) throw new Error('Missing OpenAI API key');
-  // curl https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai
   const openai = createOpenAI({
     apiKey: apiKey,
-    // baseURL: 'https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai/openai',
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL: 'https://gateway.ai.cloudflare.com/v1/1b3a9f1ee67ab460cd8b1eb53c95106c/openai/openai',
   });
   return openai;
 }
