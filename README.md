@@ -1,75 +1,99 @@
-# Nuxt Minimal Starter
+# Allivo - AI Presentation Assistant
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Allivo is an intelligent presentation preparation assistant that guides you through creating compelling presentations. Using conversational AI, it helps you clarify your presentation's subject, purpose, audience, and core message through a natural dialogue interface.
 
-## Setup
+## Features
 
-Make sure to install dependencies:
+- 🎯 **Guided Workflow**: Step-by-step guidance to define your presentation's key elements
+- 🌐 **Multilingual Support**: Automatically detects and responds in your language
+- 💬 **Natural Conversation**: Chat-based interface that feels like talking to a presentation coach
+- 📊 **Progress Tracking**: Visual progress indicators showing your preparation status
+- 🎨 **Smart Suggestions**: Context-aware suggestions to help you move forward
+- 📝 **Structured Output**: Organizes your ideas into actionable presentation structures
 
+## How It Works
+
+Allivo guides you through five essential questions to prepare your presentation:
+
+1. **What's your topic?** - Define what you're presenting about
+2. **What's your goal?** - Clarify what you want to achieve
+3. **Who's your audience?** - Identify who will be listening
+4. **What's your core message?** - Distill your key takeaway
+5. **Choose your structure** - Select the best story flow for your content
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+ 
+- Yarn package manager
+- OpenAI API key
+
+### Installation
+
+1. Clone the repository:
 ```bash
-# npm
-npm install
+git clone https://github.com/yourusername/allivo.git
+cd allivo
+```
 
-# pnpm
-pnpm install
-
-# yarn
+2. Install dependencies:
+```bash
 yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
+3. Set up environment variables:
 ```bash
-# npm
-npm run dev
+# Create a .env file in the root directory
+echo "NUXT_OPENAI_API_KEY=your_openai_api_key_here" > .env
+```
 
-# pnpm
-pnpm dev
-
-# yarn
+4. Initialize the database (happens automatically on first run):
+```bash
 yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+### Development
 
-Build the application for production:
-
+Start the development server:
 ```bash
-# npm
-npm run build
+yarn dev
+```
 
-# pnpm
-pnpm build
+The application will be available at `http://localhost:3000`
 
-# yarn
+### Production Build
+
+Build for production:
+```bash
 yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+## Tech Stack
 
-```bash
-# npm
-npm run preview
+- **Frontend**: Nuxt 4, Vue 3, TypeScript
+- **Styling**: Tailwind CSS
+- **Backend**: Nitro Server
+- **Database**: SQLite (local) / Cloudflare D1 (production)
+- **AI**: OpenAI GPT-4 via Cloudflare AI Gateway
 
-# pnpm
-pnpm preview
+## Project Structure
 
-# yarn
-yarn preview
-
-# bun
-bun run preview
+```
+allivo/
+├── app/              # Frontend Vue components and pages
+├── server/           # Backend API and database logic
+│   ├── api/         # API endpoints
+│   ├── utils/       # Utility functions and AI integration
+│   └── tasks/       # Database initialization
+├── shared/          # Shared TypeScript types
+└── public/          # Static assets
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+Proprietary - All rights reserved
