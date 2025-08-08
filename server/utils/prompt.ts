@@ -212,7 +212,18 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
       </example>
       <example for Korean>
         ['이 흐름으로 슬라이드 자동 생성 시작하기', '이 기획에 어울리는 디자인 템플릿 보기', '처음으로 돌아가 새 기획 시작하기']
-      </example>`;
+      </example>
+
+      In addition to the list of suggestions, also provide a short friendly notice (1–2 sentences) in the user's language that clearly tells the user they do not have to pick from the examples and can freely type their own input.
+
+      Keep the notice concise, positive, and friendly. Emoji may be used appropriately.
+      
+      <notice example for English>
+        "These items are just examples to help you. If you have something specific in mind, feel free to type it in!"
+      </notice example>
+      <notice example for Korean>
+        "아래 항목들은 참고용 예시예요. 원하시는 내용이 따로 있다면 자유롭게 입력해 주세요!"
+      </notice example>`;
   }
 
   const basePrompt = dedent`Generate suggestions relevant to the current question.
@@ -223,7 +234,11 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
     ${context.core_message ? `Core Message: ${context.core_message}` : ''}
     
     User's language: ${context.language || 'unknown'}
-    IMPORTANT: Generate all suggestions in the user's language.`;
+    IMPORTANT: Generate all suggestions in the user's language.
+
+    Along with the suggestions, provide a short friendly notice (1–2 sentences) in the user's language to clarify that the buttons are just examples and the user can freely type their own answer instead of choosing one.
+
+    The notice should be encouraging and concise. Emoji may be used.`;
 
   switch (nextField) {
     case 'subject':
@@ -234,7 +249,14 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         </example>
         <example for Korean>
           ['신제품 출시 소개', '분기 실적 보고', '팀 프로젝트 제안']
-        </example>`;
+        </example>
+
+        <notice example for English>
+          "These are example topics to get you started. You can also type your own topic!"
+        </notice example>
+        <notice example for Korean>
+          "아래 항목들은 예시 주제예요. 직접 주제를 입력하셔도 좋아요!"
+        </notice example>`;
 
     case 'purpose':
       return dedent`${basePrompt}
@@ -244,7 +266,14 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         </example>
         <example for Korean>
           ['프로젝트 승인 받기', '고객 관심 유도하기', '투자 유치하기']
-        </example>`;
+        </example>
+
+        <notice example for English>
+          "These options are just examples. Feel free to edit them or write a new purpose that fits your presentation."
+        </notice example>
+        <notice example for Korean>
+          "아래 제안은 참고용 예시입니다. 발표 목적에 맞게 자유롭게 수정하거나 새로 입력하셔도 됩니다."
+        </notice example>`;
 
     case 'audience':
       return dedent`${basePrompt}
@@ -254,7 +283,14 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         </example>
         <example for Korean>
           ['회사 임원진', '팀 구성원들', '외부 투자자들']
-        </example>`;
+        </example>
+
+        <notice example for English>
+          "The buttons are just examples. You can type a different audience if you have one in mind."
+        </notice example>
+        <notice example for Korean>
+          "아래 버튼은 자주 쓰이는 예시예요. 원하시는 청중을 직접 입력하셔도 전혀 문제없어요!"
+        </notice example>`;
 
     case 'core_message':
       return dedent`${basePrompt}
@@ -264,7 +300,14 @@ export const createSuggestionsPrompt = (context: PresentationPrepareContext) => 
         </example>
         <example for Korean>
           ['지금이 실행의 최적기입니다', '우리만의 차별화된 경쟁력이 있습니다', '측정 가능한 ROI를 제공합니다']
-        </example>`;
+        </example>
+
+        <notice example for English>
+          "These are just sample messages. If you already have a key message, please type it in freely."
+        </notice example>
+        <notice example for Korean>
+          "아래 제안 항목은 참고용 예시입니다. 이미 떠오르는 핵심 메시지가 있다면 자유롭게 입력해 주세요!"
+        </notice example>`;
 
     default:
       return undefined;
