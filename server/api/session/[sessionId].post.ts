@@ -75,10 +75,10 @@ export default defineEventHandler(async (event) => {
   // Start generating suggestions early (in parallel with streaming)
   const suggestionPromise = (async () => {
     // Don't generate suggestions for off-topic responses
-    if (isOffTopic) return [];
+    if (isOffTopic) return { candidates: [], notice: '' };
 
     const suggestionPrompt = createSuggestionsPrompt(sessionContext);
-    if (!suggestionPrompt) return [];
+    if (!suggestionPrompt) return { candidates: [], notice: '' };
 
     try {
       const { object } = await generateObject({
@@ -89,12 +89,13 @@ export default defineEventHandler(async (event) => {
         prompt: suggestionPrompt,
         schema: z.object({
           candidates: z.array(z.string().min(1).max(255)).describe('3-5 suggestions in user language'),
+          notice: z.string().min(5).max(300).describe('Short friendly notice telling user they can freely input instead of choosing a suggestion')
         }),
       });
-      return object.candidates;
+      return { candidates: object.candidates, notice: object.notice };
     } catch (error) {
       console.error('Error generating suggestions:', error);
-      return [];
+      return { candidates: [], notice: '' };
     }
   })();
 
@@ -145,7 +146,7 @@ export default defineEventHandler(async (event) => {
           }
 
           // Wait for suggestions (already started generating)
-          const suggestions = await suggestionPromise;
+          const { candidates, notice } = await suggestionPromise;
 
           // Save assistant response with suggestions
           await db.sql`
@@ -157,7 +158,7 @@ export default defineEventHandler(async (event) => {
               'assistant',
               ${createMessageContent([
             { type: 'text', text: event.text },
-            { type: 'data-suggestion', data: { candidates: suggestions } }
+            { type: 'data-suggestion', data: { candidates, notice } }
           ])},
               ${JSON.stringify({
             finishReason: event.finishReason,
@@ -176,7 +177,7 @@ export default defineEventHandler(async (event) => {
           // Send suggestions to client
           writer.write({
             type: 'data-suggestion',
-            data: { candidates: suggestions }
+            data: { candidates, notice }
           });
         }
       });

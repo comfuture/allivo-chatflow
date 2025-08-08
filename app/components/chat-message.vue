@@ -19,8 +19,8 @@ console.log('Message parts:', props.message.parts);
   ]">
     <div :class="[
       'max-w-[70%] rounded-lg p-4',
-      message.role === 'user' 
-        ? 'bg-blue-500 text-white' 
+      message.role === 'user'
+        ? 'bg-blue-500 text-white'
         : 'bg-gray-100 text-gray-800'
     ]">
       <div class="font-semibold text-sm mb-1">
@@ -28,24 +28,18 @@ console.log('Message parts:', props.message.parts);
       </div>
       <div class="space-y-2">
         <template v-for="(part, index) in message.parts" :key="index">
-          <div 
-            v-if="part.type === 'text'" 
-            class="prose prose-sm max-w-none"
-            :class="message.role === 'user' ? 'prose-invert' : ''"
-            v-html="marked.parse(part.text || '')"
-          />
-          <div 
-            v-else-if="part.type === 'data-suggestion' && part.data?.candidates"
-            class="flex flex-wrap gap-2 mt-3"
-          >
-            <button 
-              class="suggestion"
-              @click.prevent="emit('sendMessage', candidate)"
-              v-for="(candidate, idx) in (part.data as any).candidates" 
-              :key="idx"
-            >
-              {{ candidate }}
-            </button>
+          <div v-if="part.type === 'text'" class="prose prose-sm max-w-none"
+            :class="message.role === 'user' ? 'prose-invert' : ''" v-html="marked.parse(part.text || '')" />
+          <div v-else-if="part.type === 'data-suggestion' && part.data" class="mt-4">
+            <p v-if="part.data.notice" class="text-xs opacity-80 mb-2">
+              {{ part.data.notice }}
+            </p>
+            <div v-if="part.data.candidates && part.data.candidates.length" class="flex flex-wrap gap-2">
+              <button class="suggestion" @click.prevent="emit('sendMessage', candidate)"
+                v-for="(candidate, idx) in (part.data as any).candidates" :key="idx">
+                {{ candidate }}
+              </button>
+            </div>
           </div>
           <!-- Handle other part types as needed -->
         </template>
