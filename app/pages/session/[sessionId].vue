@@ -46,7 +46,7 @@ const chat = new Chat({
       // Update the reactive session context
       currentSession.context = data as any;
     }
-    
+
     // Scroll to bottom on any data update
     scrollToBottom();
   }
@@ -74,7 +74,7 @@ watchEffect(() => {
 const handleSubmit = (e: Event) => {
   e.preventDefault();
   if (!input.value.trim()) return;
-  
+
   candidates.value = [];
   chat.sendMessage({ text: input.value });
   input.value = "";
@@ -100,48 +100,32 @@ onMounted(() => {
   <section class="h-screen flex bg-gray-50">
     <!-- Sidebar - Fixed -->
     <chat-sidebar />
-    
+
     <!-- Main Chat Area -->
     <div class="flex-1 flex h-full">
       <!-- Chat Messages Container -->
       <div class="flex-1 flex flex-col bg-white">
         <!-- Messages Area - Scrollable -->
-        <div 
-          ref="messagesContainer"
-          class="flex-1 overflow-y-auto p-4 space-y-4"
-        >
-          <chat-message 
-            :message="m" 
-            v-for="m in chat.messages" 
-            :key="m.id"
-            @sendMessage="chat.sendMessage({ text: $event })" 
-          />
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <chat-message :message="m" v-for="m in chat.messages" :key="m.id"
+            @sendMessage="chat.sendMessage({ text: $event })" />
         </div>
-        
+
         <!-- Input Area - Fixed at bottom -->
         <div class="border-t border-gray-200 bg-white p-4">
           <form @submit="handleSubmit" class="flex gap-2">
-            <input 
-              v-model="input" 
-              placeholder="Type your message..." 
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button 
-              type="submit" 
-              :disabled="!input.trim()"
-              class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
-            >
+            <input v-model="input" placeholder="Type your message..."
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <button type="submit" :disabled="!input.trim()"
+              class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200">
               Send
             </button>
           </form>
         </div>
       </div>
-      
+
       <!-- Session Context Panel - Fixed -->
-      <chat-session 
-        v-if="currentSession.context" 
-        :session-context="currentSession.context" 
-      />
+      <chat-session v-if="currentSession.context" :session-context="currentSession.context" />
     </div>
   </section>
 </template>
