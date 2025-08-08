@@ -89,7 +89,7 @@ onMounted(() => {
     chat.sendMessage({
       // Include a custom data part to signal server to start the session
       parts: [
-        { type: 'data-start-session', data: { ts: Date.now() } }
+        { type: 'data-start-session', data: { ts: Date.now(), lang: navigator.language } }
       ] as any
     });
   }

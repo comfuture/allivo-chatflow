@@ -9,7 +9,7 @@ import {
 } from 'ai';
 import { createPrompt, createSuggestionsPrompt, processMessages } from '~~/server/utils/prompt';
 import type { PresentationPrepareContext } from '@@/shared/types';
-import { extractTextFromMessage, createMessageContent } from '~~/server/utils/helpers';
+import { extractTextFromMessage, createMessageContent, parseLanguage } from '~~/server/utils/helpers';
 import { generateId } from '~~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
@@ -35,16 +35,23 @@ export default defineEventHandler(async (event) => {
   const lastAssistantMessage = messages.length >= 2 ? extractTextFromMessage(messages[messages.length - 2]) : '';
 
   // Detect special kickoff signal from client
-  const hasStartSessionPart = Array.isArray((lastUser as any)?.parts) && (lastUser as any).parts.some((p: any) => p?.type === 'data-start-session');
+  const startPart = Array.isArray((lastUser as any)?.parts)
+    ? (lastUser as any).parts.find((p: any) => p?.type === 'data-start-session')
+    : undefined;
+  const hasStartSessionPart = !!startPart;
 
   let newContext: Partial<PresentationPrepareContext & { isOffTopic?: boolean }> = {};
   let isOffTopic = false;
 
   if (hasStartSessionPart) {
-    // Kick off the flow: ask for subject
+    // Extract language hint from kickoff payload (e.g., 'ko-KR' -> 'ko')
+    const kickoffLangRaw = startPart?.data?.lang as string | undefined;
+    const kickoffLang = kickoffLangRaw ? parseLanguage(kickoffLangRaw) : sessionContext.language;
+
+    // Kick off the flow: ask for subject and set language from client hint (if any)
     newContext = {
       step: 'collecting_subject',
-      language: sessionContext.language // keep existing language if any; model will detect otherwise
+      language: kickoffLang || sessionContext.language
     };
     isOffTopic = false;
   } else {
