@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import * as marked from "marked";
+import { computed } from 'vue';
 
 const props = defineProps<{
   message: any; // Using any for now to handle custom data types
@@ -9,11 +10,27 @@ const emit = defineEmits<{
   (e: "sendMessage", message: string): void;
 }>();
 
+// Determine if message has any renderable parts
+const hasRenderableParts = computed(() => {
+  const parts = props.message?.parts || [];
+  return parts.some((part: any) => {
+    if (part?.type === 'text') {
+      return !!(part.text && String(part.text).trim().length > 0);
+    }
+    if (part?.type === 'data-suggestion') {
+      const d = part.data || {};
+      return (Array.isArray(d.candidates) && d.candidates.length > 0) || !!(d.notice && String(d.notice).trim().length > 0);
+    }
+    // Non-visual data parts (e.g., data-start-session, data-session-context) should not render a bubble
+    return false;
+  });
+});
+
 // Debug log to check message structure
 console.log('Message parts:', props.message.parts);
 </script>
 <template>
-  <div class="chat-message" :class="[
+  <div v-if="hasRenderableParts" class="chat-message" :class="[
     'flex',
     message.role === 'user' ? 'justify-end' : 'justify-start'
   ]">

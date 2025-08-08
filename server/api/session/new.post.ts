@@ -1,6 +1,3 @@
-import dedent from 'dedent';
-import { generateText } from 'ai';
-import { parseLanguage, createMessageContent } from '~~/server/utils/helpers';
 import { generateId } from '~~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
@@ -37,49 +34,7 @@ export default defineEventHandler(async (event) => {
     )
   `;
 
-  // Get language from body or Accept-Language header
-  const language = body.language || parseLanguage(getHeader(event, 'accept-language'));
-
-  // const openai = useOpenAI();
-  const { text } = await generateText({
-    model: 'openai/gpt-4.1', // openai('gpt-4.1'),
-    system: `IMPORTANT: Generate the message in ${language} language. Use friendly, conversational tone with appropriate emojis.`,
-    prompt: dedent`Generate an initial greeting for Alivo presentation preparation service.
-      
-      Follow this format:
-      - Warm greeting with emoji
-      - Ask about their presentation topic
-      
-      <example for English>
-        Hello! 😊
-        First, what topic are you preparing a presentation about?
-      </example>
-      
-      <example for Korean>
-        안녕하세요! 😊
-        먼저, 이번에 준비하고 계신 발표는 어떤 주제인가요?
-      </example>
-    `,
-  });
-
-  // Insert greeting message into chat_message with proper JSON format
-  await db.sql`
-    INSERT INTO chat_message (
-      id,
-      session_id,
-      role,
-      content,
-      metadata
-    ) VALUES (
-      ${generateId()},
-      ${sessionId},
-      'assistant',
-      ${createMessageContent([{ type: 'text', text }])},
-      ${null}
-    )
-  `;
-
-  // Return the created session
+  // Return the created session immediately
   return {
     id: sessionId,
     createdAt: new Date().toISOString(),

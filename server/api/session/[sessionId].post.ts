@@ -19,8 +19,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDatabase();
-  // const openai = useOpenAI();
-  // const models = useGithubModels();
 
   // Get session
   const { rows } = await db.sql`SELECT * FROM chat_session WHERE id = ${sessionId}`;
@@ -32,20 +30,34 @@ export default defineEventHandler(async (event) => {
   // Get messages from request
   const { messages }: { messages: UIMessage[] } = await readBody(event);
 
-  // Process the conversation to extract context
+  const lastUser = messages[messages.length - 1];
+  const userMessage = extractTextFromMessage(lastUser);
   const lastAssistantMessage = messages.length >= 2 ? extractTextFromMessage(messages[messages.length - 2]) : '';
-  const userMessage = extractTextFromMessage(messages[messages.length - 1]);
 
-  const newContext = await processMessages(sessionContext, lastAssistantMessage, userMessage);
+  // Detect special kickoff signal from client
+  const hasStartSessionPart = Array.isArray((lastUser as any)?.parts) && (lastUser as any).parts.some((p: any) => p?.type === 'data-start-session');
+
+  let newContext: Partial<PresentationPrepareContext & { isOffTopic?: boolean }> = {};
+  let isOffTopic = false;
+
+  if (hasStartSessionPart) {
+    // Kick off the flow: ask for subject
+    newContext = {
+      step: 'collecting_subject',
+      language: sessionContext.language // keep existing language if any; model will detect otherwise
+    };
+    isOffTopic = false;
+  } else {
+    // Normal processing
+    newContext = await processMessages(sessionContext, lastAssistantMessage, userMessage);
+    isOffTopic = !!newContext.isOffTopic;
+  }
 
   // Debug log
   console.log('Extracted context:', newContext);
   console.log('Current context after merge:', { ...sessionContext, ...newContext });
 
-  // Check if off-topic
-  const isOffTopic = newContext.isOffTopic;
-
-  // Update session context - only update non-null values and skip content updates if off-topic
+  // Update session context
   const updates = {
     step: newContext.step || sessionContext.step,
     language: newContext.language || sessionContext.language,
@@ -74,15 +86,14 @@ export default defineEventHandler(async (event) => {
 
   // Start generating suggestions early (in parallel with streaming)
   const suggestionPromise = (async () => {
-    // Don't generate suggestions for off-topic responses
-    if (isOffTopic) return { candidates: [], notice: '' };
+    if (isOffTopic) return { candidates: [], notice: '' } as const;
 
     const suggestionPrompt = createSuggestionsPrompt(sessionContext);
-    if (!suggestionPrompt) return { candidates: [], notice: '' };
+    if (!suggestionPrompt) return { candidates: [], notice: '' } as const;
 
     try {
       const { object } = await generateObject({
-        model: 'openai/gpt-4.1-mini', // openai('gpt-4o-mini'),
+        model: 'openai/gpt-4.1-mini',
         system: dedent`IMPORTANT: Generate suggestions in the user's language.
           User's language: ${sessionContext.language || 'auto-detect'}
           All suggestions must be in the same language as the user's messages.`,
@@ -92,10 +103,10 @@ export default defineEventHandler(async (event) => {
           notice: z.string().min(5).max(300).describe('Short friendly notice telling user they can freely input instead of choosing a suggestion')
         }),
       });
-      return { candidates: object.candidates, notice: object.notice };
+      return { candidates: object.candidates, notice: object.notice } as const;
     } catch (error) {
       console.error('Error generating suggestions:', error);
-      return { candidates: [], notice: '' };
+      return { candidates: [], notice: '' } as const;
     }
   })();
 
@@ -110,8 +121,18 @@ export default defineEventHandler(async (event) => {
         });
       }
 
+      // Push suggestions as soon as they are ready
+      suggestionPromise.then(({ candidates, notice }) => {
+        if ((candidates && candidates.length) || notice) {
+          writer.write({
+            type: 'data-suggestion',
+            data: { candidates, notice }
+          });
+        }
+      });
+
       const result = streamText({
-        model: 'openai/gpt-4.1', // openai('gpt-4o'),
+        model: 'openai/gpt-4.1',
         system: dedent`IMPORTANT: You must respond in the user's language.
           User's detected language: ${sessionContext.language || 'auto-detect'}
           If language is not detected, analyze the user's message and respond in the same language they used.`,
@@ -124,7 +145,6 @@ export default defineEventHandler(async (event) => {
             const lastUserMessage = messages[messages.length - 1];
             const userMessageParts = lastUserMessage.parts || [];
 
-            // Add session context update to user message if context was updated
             if (Object.keys(newContext).length > 0) {
               userMessageParts.push({
                 type: 'data-session-context',
@@ -145,7 +165,7 @@ export default defineEventHandler(async (event) => {
             `;
           }
 
-          // Wait for suggestions (already started generating)
+          // Wait for suggestions
           const { candidates, notice } = await suggestionPromise;
 
           // Save assistant response with suggestions
@@ -167,18 +187,11 @@ export default defineEventHandler(async (event) => {
             )
           `;
 
-          // Update session timestamp
           await db.sql`
             UPDATE chat_session 
             SET updated_at = CURRENT_TIMESTAMP 
             WHERE id = ${sessionId}
           `;
-
-          // Send suggestions to client
-          writer.write({
-            type: 'data-suggestion',
-            data: { candidates, notice }
-          });
         }
       });
 

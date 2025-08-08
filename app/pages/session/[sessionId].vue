@@ -37,6 +37,7 @@ const chat = new Chat({
     if (type === "data-suggestion") {
       console.log("Suggestion received:", data);
       candidates.value = (data as any).candidates || [];
+      // Optionally, handle data.notice later if needed by UI components
     } else if (type === "data-session-context") {
       console.log("Session context updated:", data);
       if (sessionData.value) {
@@ -80,9 +81,18 @@ const handleSubmit = (e: Event) => {
   scrollToBottom();
 };
 
-// Scroll to bottom on mount
+// On mount: if there are no messages yet, send a special kickoff message part
 onMounted(() => {
   scrollToBottom();
+  const hasMessages = Array.isArray((sessionData.value as any)?.messages) && (sessionData.value as any)?.messages.length > 0;
+  if (!hasMessages) {
+    chat.sendMessage({
+      // Include a custom data part to signal server to start the session
+      parts: [
+        { type: 'data-start-session', data: { ts: Date.now() } }
+      ] as any
+    });
+  }
 });
 </script>
 
