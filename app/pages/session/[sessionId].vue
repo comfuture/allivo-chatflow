@@ -6,6 +6,7 @@ import { ref, nextTick, provide, reactive } from "vue";
 const { params: { sessionId } } = useRoute();
 const id = useId();
 const input = ref("");
+const inputField = ref<HTMLInputElement>();
 const candidates = ref<string[]>([]);
 const messagesContainer = ref<HTMLDivElement>();
 
@@ -25,6 +26,14 @@ const scrollToBottom = async () => {
   await nextTick();
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+};
+
+// Focus input field function
+const focusInput = async () => {
+  await nextTick();
+  if (inputField.value) {
+    inputField.value.focus();
   }
 };
 
@@ -79,6 +88,13 @@ const handleSubmit = (e: Event) => {
   chat.sendMessage({ text: input.value });
   input.value = "";
   scrollToBottom();
+  focusInput();
+};
+
+// Handle suggestion clicks
+const handleSuggestionClick = (message: string) => {
+  chat.sendMessage({ text: message });
+  focusInput();
 };
 
 // On mount: if there are no messages yet, send a special kickoff message part
@@ -108,13 +124,13 @@ onMounted(() => {
         <!-- Messages Area - Scrollable -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
           <chat-message :message="m" v-for="m in chat.messages" :key="m.id"
-            @sendMessage="chat.sendMessage({ text: $event })" />
+            @sendMessage="handleSuggestionClick" />
         </div>
 
         <!-- Input Area - Fixed at bottom -->
         <div class="border-t border-gray-200 bg-white p-4">
           <form @submit="handleSubmit" class="flex gap-2">
-            <input v-model="input" placeholder="Type your message..."
+            <input ref="inputField" v-model="input" placeholder="Type your message..."
               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             <button type="submit" :disabled="!input.trim()"
               class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200">
