@@ -181,6 +181,12 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
       break;
   }
 
+  // Language guidance: prefer explicit context.language
+  const languageGuidance = context.language
+    ? dedent`- Respond strictly in ${context.language} (do not switch languages)
+      - If the user's message language is unclear or empty, still use ${context.language}`
+    : dedent`- Detect the user's language from their message and respond in the same language`;
+
   return dedent`You are helping the user prepare a presentation with a friendly, supportive tone.
     
     ${questionPrompt}
@@ -188,7 +194,7 @@ export const createPrompt = (context: PresentationPrepareContext, userMessage?: 
     ${userMessage ? `User just said: "${userMessage}"` : ''}
     
     IMPORTANT: 
-    - Detect the user's language from their message and respond in the same language
+    ${languageGuidance}
     - Use emojis appropriately
     - Be conversational and encouraging
     - Don't mention what context you already have`;
